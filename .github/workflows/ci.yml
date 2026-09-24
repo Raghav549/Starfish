@@ -20,6 +20,7 @@ jobs:
         with: {python-version: "3.11"}
       - run: pip install -r backend/requirements.txt
       - run: PYTHONPATH=backend:benchmarks pytest benchmarks/tests
+      - run: PYTHONPATH=backend python -m pytest backend/tests
       - run: PYTHONPATH=backend:benchmarks python -m compileall -q benchmarks
   native:
     runs-on: ubuntu-latest
