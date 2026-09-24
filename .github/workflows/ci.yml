@@ -10,6 +10,13 @@ jobs:
         with: {python-version: "3.11"}
       - run: pip install -r requirements.txt
       - run: pytest
+  native:
+    runs-on: ubuntu-latest
+    defaults: {run: {working-directory: native}}
+    steps:
+      - uses: actions/checkout@v4
+      - run: cmake -S . -B build
+      - run: cmake --build build
   frontend:
     runs-on: ubuntu-latest
     defaults: {run: {working-directory: frontend}}
