@@ -15,6 +15,7 @@ class FingerprintPipeline:
     min_component:int=24
     max_trace:int=28
     ridge_step_px:float=1.0
+    target_ridge_wavelength:float=10.0
 
     def _normalize(self,img):
         x=img.astype(np.float32); p1,p99=np.percentile(x,(1,99))
