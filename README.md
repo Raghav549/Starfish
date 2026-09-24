@@ -28,3 +28,10 @@ cd frontend
 npm install
 npm run dev
 ```
+
+
+## Research basis
+
+See [RESEARCH.md](RESEARCH.md) for the algorithmic literature guiding Starfish, including contextual enhancement, STFT orientation/frequency estimation, directional fields, singular points, wavelet/Wiener alternatives, minutiae extraction/matching, deep minutiae detection and NIST quality assessment.
+
+See [benchmarks/README.md](benchmarks/README.md) for the evaluation protocol.
