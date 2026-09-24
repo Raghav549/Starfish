@@ -34,12 +34,12 @@ async def decode_image(file:UploadFile)->np.ndarray:
     return image
 
 def image_data_url(image:np.ndarray,kind:str)->str:
-    if image.ndim==2:
-        ok,data=cv2.imencode(".png",image,[cv2.IMWRITE_PNG_COMPRESSION,6])
-        mime="image/png"
-    else:
-        ok,data=cv2.imencode(".jpg",image,[cv2.IMWRITE_JPEG_QUALITY,82])
+    if kind in {"enhanced","overlay"}:
+        ok,data=cv2.imencode(".jpg",image,[cv2.IMWRITE_JPEG_QUALITY,72])
         mime="image/jpeg"
+    else:
+        ok,data=cv2.imencode(".png",image,[cv2.IMWRITE_PNG_COMPRESSION,7])
+        mime="image/png"
     if not ok:
         raise RuntimeError(f"artifact encoding failed: {kind}")
     return f"data:{mime};base64,{base64.b64encode(data.tobytes()).decode('ascii')}"
