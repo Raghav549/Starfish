@@ -64,6 +64,29 @@ class FingerprintPipeline:
                     if .03<=f<=.35: freq[y:y+bs,x:x+bs]=f
         return cv2.GaussianBlur(theta.astype(np.float32),(0,0),2),cv2.GaussianBlur(freq,(0,0),2),coherence
 
+    def _ridge_reconstruction(self,img,mask,ori,freq):
+        # Build a cleaner ridge/valley representation for visualization and downstream
+        # skeletonization. Each valid pixel is filtered by its local orientation/frequency.
+        src=img.astype(np.float32)/255.0
+        valid=freq[(freq>0)&(mask>0)]
+        default_freq=1.0/self.target_ridge_wavelength
+        rf=float(np.median(valid)) if valid.size else default_freq
+        wavelength=float(np.clip(1.0/max(rf,1e-3),6,18))
+        bank=np.linspace(0,math.pi,32,endpoint=False)
+        response=np.zeros_like(src)
+        for a in bank:
+            k=cv2.getGaborKernel((41,41),max(2.5,self.gabor_sigma),float(a),wavelength,.55,0,cv2.CV_32F)
+            r=cv2.filter2D(src,cv2.CV_32F,k)
+            delta=np.abs(np.angle(np.exp(1j*(ori-a))))
+            w=np.exp(-(delta*delta)/(2*(math.pi/34)**2))
+            response+=r*w
+        response=cv2.normalize(response,None,0,1,cv2.NORM_MINMAX)
+        # Combine response with normalized local image to avoid erasing legitimate ridge detail.
+        base=cv2.normalize(src,None,0,1,cv2.NORM_MINMAX)
+        out=(0.72*response+0.28*base)
+        out[mask==0]=0
+        return (np.clip(out,0,1)*255).astype(np.uint8)
+
     def _enhance(self,img,mask,ori,freq):
         valid=freq[(freq>0)&(mask>0)]; rf=float(np.median(valid)) if valid.size else .1
         wavelength=float(np.clip(1/max(rf,1e-3),6,24)); src=img.astype(np.float32)/255.; out=np.zeros_like(src)
