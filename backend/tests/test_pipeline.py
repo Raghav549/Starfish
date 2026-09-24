@@ -6,6 +6,7 @@ def test_pipeline_integrity():
     for y in range(20,236,14): cv2.line(img,(30,y),(225,y),255,4)
     r=FingerprintPipeline().process(img)
     assert r["enhanced"].shape==img.shape
+    assert r["reconstruction"].shape==img.shape
     assert r["mask"].shape==img.shape
     assert set(r["counts"])=={"total","endings","bifurcations","singular_points"}
     assert r["template"]["format"]=="starfish-minutiae"
