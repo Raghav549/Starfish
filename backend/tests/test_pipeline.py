@@ -14,6 +14,10 @@ def test_pipeline_integrity():
     assert 0.0<=r["quality"]["frequency_coverage"]<=1.0
     assert "ridge_frequency_median" in r["quality"]
     assert "orientation_concentration" in r["quality"]
+    assert "local_clarity_mean" in r["quality"]
+    assert "orientation_certainty_mean" in r["quality"]
+    assert "orientation_flow_mean" in r["quality"]
+    assert "ridge_valley_uniformity" in r["quality"]
     assert isinstance(r["singular_points"],list)
 
 def test_uniform_image_is_safe():
