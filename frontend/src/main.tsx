@@ -44,7 +44,7 @@ function App(){
   }catch(e){setErr(e instanceof Error?e.message:"Analysis failed");setStage("Stopped safely");}
   finally{if(timer)clearInterval(timer);setBusy(false)}
  }
- const url=(p:string)=>p.startsWith("http")?p:API+p,dl=(k:string)=>API+"/api/v1/download/"+r!.job_id+"/"+k;
+ const url=(p:string)=>p.startsWith("data:")||p.startsWith("http")?p:API+p,dl=(k:string)=>r?.artifacts?.[k]||"#";
  return <main>
   <header className="top"><div className="brand">STARFISH</div><div className="top-meta">Fingerprint imaging &amp; minutiae analysis</div></header>
   <section className="hero"><div className="eyebrow">ANALYZE • VISUALIZE • EXPORT</div><h1>Fingerprint analysis, <span>clearly.</span></h1><p className="lead">A compact research-oriented pipeline for image enhancement, ridge visualization and minutiae extraction.</p>
@@ -61,7 +61,7 @@ function App(){
    <div className="stats">{[[r.counts.total,"Minutiae"],[r.counts.endings,"Endings"],[r.counts.bifurcations,"Bifurcations"],[((r.quality.foreground_ratio*100).toFixed(1)+"%"),"Foreground"],[r.quality.status,"Quality"]].map(([a,b])=><div className="stat" key={String(b)}><strong>{a}</strong><span>{b}</span></div>)}</div>
    <div className="viewer"><div className="viewer-top"><div><b>Enhanced fingerprint</b><span>{r.width}×{r.height}</span></div><div className="links"><a href={dl("enhanced")} download>Download</a><a href={dl("overlay")} download>Overlay</a></div></div><img className="primary" src={url(r.artifacts.enhanced)} alt="Enhanced fingerprint"/></div>
    <div className="grid">{["enhanced","mask","skeleton","overlay"].map(k=><figure key={k}><img src={url(r.artifacts[k])} alt={k}/><figcaption><b>{k}</b><a href={dl(k)} download>Download</a></figcaption></figure>)}</div>
-   <div className="template-card"><div><small>EXTRACTED TEMPLATE</small><h2>Minutiae template</h2><p>Coordinates, type, orientation and quality metadata from the processing pipeline.</p></div><a className="download" href={dl("template")} download>Download JSON</a></div>
+   <div className="template-card"><div><small>EXTRACTED TEMPLATE</small><h2>Minutiae template</h2><p>Coordinates, type, orientation and quality metadata from the processing pipeline.</p></div><a className="download" href={"data:application/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(r.template,null,2))} download>Download JSON</a></div>
   </section>}
   <footer><span>STARFISH</span><span>Research and imaging workflow • not an identity conclusion</span></footer>
  </main>;
