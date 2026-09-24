@@ -1,0 +1,19 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "title":"Starfish Ground Truth",
+  "type":"object",
+  "additionalProperties":{
+    "type":"array",
+    "items":{
+      "type":"object",
+      "required":["x","y","type"],
+      "properties":{
+        "x":{"type":"number"},
+        "y":{"type":"number"},
+        "type":{"type":"string","enum":["ending","bifurcation"]},
+        "angle":{"type":"number"}
+      },
+      "additionalProperties":false
+    }
+  }
+}
