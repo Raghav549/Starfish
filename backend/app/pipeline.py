@@ -185,7 +185,7 @@ class FingerprintPipeline:
     def process(self,image):
         n=self._normalize(image); q=self._quality(n); mask=self._segment(n); ori,freq,coh=self._orientation_frequency(n,mask)
         enh=self._enhance(n,mask,ori,freq); sk=self._skeleton(enh,mask); pts=self._extract(sk,ori,mask,coh,enh); singular=self._singular_points(ori,mask)
-        q.update({"foreground_ratio":float(np.mean(mask>0)),"frequency_coverage":float(np.mean((freq>0)&(mask>0)),
+        q.update({"foreground_ratio":float(np.mean(mask>0)),"frequency_coverage":float(np.mean((freq>0)&(mask>0))),
             "ridge_frequency_median":float(np.median(freq[(freq>0)&(mask>0)])) if np.any((freq>0)&(mask>0)) else 0.0,
             "ridge_frequency_p10":float(np.percentile(freq[(freq>0)&(mask>0)],10)) if np.any((freq>0)&(mask>0)) else 0.0,
             "ridge_frequency_p90":float(np.percentile(freq[(freq>0)&(mask>0)],90)) if np.any((freq>0)&(mask>0)) else 0.0,
