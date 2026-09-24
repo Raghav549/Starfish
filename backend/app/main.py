@@ -1,11 +1,11 @@
 import base64
-import json, uuid
+import uuid
 import cv2
 import numpy as np
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from .pipeline import FingerprintPipeline
 
-app=FastAPI(title="Starfish Fingerprint Engine",version="0.8.0")
+app=FastAPI(title="Starfish Fingerprint Engine",version="0.9.0")
 pipeline=FingerprintPipeline()
 MAX_UPLOAD_BYTES=4_000_000
 MAX_SIDE=1600
@@ -16,7 +16,7 @@ def root():
 
 @app.get("/health")
 def health():
-    return {"status":"ok","service":"starfish","version":"0.8.0"}
+    return {"status":"ok","service":"starfish","version":"0.9.0"}
 
 async def decode_image(file:UploadFile)->np.ndarray:
     raw=await file.read(MAX_UPLOAD_BYTES+1)
@@ -44,13 +44,14 @@ def image_data_url(image:np.ndarray,kind:str)->str:
         raise RuntimeError(f"artifact encoding failed: {kind}")
     return f"data:{mime};base64,{base64.b64encode(data.tobytes()).decode('ascii')}"
 
+def scalarize_quality(q):
+    return {k: float(v) if isinstance(v,(np.floating,float,int,np.integer)) and k!="status" else v for k,v in q.items()}
+
 @app.post("/api/v1/extract")
 async def extract(file:UploadFile=File(...)):
     image=await decode_image(file)
     try:
         result=pipeline.process(image)
-        # Vercel Functions do not provide durable writable project storage.
-        # Keep each analysis response self-contained instead of writing artifacts.
         artifacts={
             "enhanced":image_data_url(result["enhanced"],"enhanced"),
             "mask":image_data_url(result["mask"],"mask"),
@@ -61,9 +62,10 @@ async def extract(file:UploadFile=File(...)):
             "job_id":uuid.uuid4().hex,
             "width":int(image.shape[1]),
             "height":int(image.shape[0]),
-            "quality":result["quality"],
-            "counts":result["counts"],
+            "quality":scalarize_quality(result["quality"]),
+            "counts":{k:int(v) for k,v in result["counts"].items()},
             "minutiae":result["minutiae"],
+            "singular_points":result.get("singular_points",[]),
             "template":result["template"],
             "artifacts":artifacts,
         }
