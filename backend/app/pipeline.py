@@ -205,6 +205,31 @@ class FingerprintPipeline:
                 "orientation_std":float(np.sqrt(max(0,-2*math.log(max(mean,1e-6))))/2),"coherence_mean":float(np.mean(coh)),
                 "coherence_p10":float(np.percentile(coh,10)),"coherence_p50":float(np.percentile(coh,50)),"coherence_p90":float(np.percentile(coh,90))}
 
+
+    def _ridge_quality_features(self, img, ori, freq, mask, enhanced):
+        valid=mask>0
+        if not np.any(valid):
+            return {"ridge_valley_uniformity":0.0,"orientation_flow_mean":0.0,"orientation_certainty_mean":0.0,"frequency_mean":0.0}
+        # NFIQ2-inspired diagnostics: frequency, local clarity, orientation certainty and flow.
+        local_mean=cv2.GaussianBlur(enhanced.astype(np.float32),(0,0),3)
+        local_var=cv2.GaussianBlur(enhanced.astype(np.float32)**2,(0,0),3)-local_mean**2
+        clarity=float(np.mean(np.clip(np.sqrt(np.maximum(local_var,0))/64.0,0,1)[valid]))
+        z=np.exp(1j*2*ori); certainty=float(np.mean(np.clip(np.abs(cv2.GaussianBlur(z.real,(0,0),2)+1j*cv2.GaussianBlur(z.imag,(0,0),2)),0,1)[valid]))
+        flow=[]
+        for dy,dx in ((-1,0),(1,0),(0,-1),(0,1)):
+            shifted=np.roll(ori,(dy*self.block_size,dx*self.block_size),(0,1))
+            d=.5*np.angle(np.exp(1j*2*(ori-shifted)))
+            flow.append(np.abs(d))
+        flow_mean=float(np.mean(np.stack(flow),axis=0)[valid].mean())
+        fv=freq[valid & (freq>0)]
+        freq_mean=float(np.mean(fv)) if fv.size else 0.0
+        # Estimate ridge/valley width consistency through local gradients along the ridge-normal.
+        gx=cv2.Sobel(enhanced,cv2.CV_32F,1,0,ksize=3); gy=cv2.Sobel(enhanced,cv2.CV_32F,0,1,ksize=3)
+        normal_grad=np.abs(gx*np.cos(ori)+gy*np.sin(ori))
+        rv_uniform=float(np.clip(1.0/(1.0+np.std(normal_grad[valid])/(np.mean(normal_grad[valid])+1e-6)),0,1))
+        return {"local_clarity_mean":clarity,"orientation_certainty_mean":certainty,"orientation_flow_mean":flow_mean,
+                "frequency_mean":freq_mean,"ridge_valley_uniformity":rv_uniform}
+
     def process(self,image):
         n=self._normalize(image); q=self._quality(n); mask=self._segment(n); ori,freq,coh=self._orientation_frequency(n,mask)
         reconstruction=self._ridge_reconstruction(n,mask,ori,freq); enh=self._enhance(reconstruction,mask,ori,freq); sk=self._skeleton(enh,mask); pts=self._extract(sk,ori,mask,coh,enh); singular=self._singular_points(ori,mask)
@@ -212,7 +237,7 @@ class FingerprintPipeline:
             "ridge_frequency_median":float(np.median(freq[(freq>0)&(mask>0)])) if np.any((freq>0)&(mask>0)) else 0.0,
             "ridge_frequency_p10":float(np.percentile(freq[(freq>0)&(mask>0)],10)) if np.any((freq>0)&(mask>0)) else 0.0,
             "ridge_frequency_p90":float(np.percentile(freq[(freq>0)&(mask>0)],90)) if np.any((freq>0)&(mask>0)) else 0.0,
-            "minutiae_density":float(len(pts)/max(int(np.sum(mask>0)),1)*10000),"singular_points":len(singular),**self._orientation_stats(ori,coh,mask)})
+            "minutiae_density":float(len(pts)/max(int(np.sum(mask>0)),1)*10000),"singular_points":len(singular),**self._orientation_stats(ori,coh,mask),**self._ridge_quality_features(n,ori,freq,mask,enh)})
         q["status"]="usable" if q["foreground_ratio"]>.08 and q["coherence_p50"]>.18 and len(pts)>=4 else "review"
         return {"reconstruction":reconstruction,"enhanced":enh,"mask":mask,"skeleton":sk,"overlay":self._overlay(enh,sk,pts,singular),"minutiae":pts,"singular_points":singular,"orientation_field":ori,"ridge_frequency":freq,
                 "counts":{"total":len(pts),"endings":sum(m["type"]=="ending" for m in pts),"bifurcations":sum(m["type"]=="bifurcation" for m in pts),"singular_points":len(singular)},
