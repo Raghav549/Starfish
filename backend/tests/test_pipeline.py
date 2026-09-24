@@ -7,9 +7,14 @@ def test_pipeline_integrity():
     r=FingerprintPipeline().process(img)
     assert r["enhanced"].shape==img.shape
     assert r["mask"].shape==img.shape
-    assert set(r["counts"])=={"total","endings","bifurcations"}
+    assert set(r["counts"])=={"total","endings","bifurcations","singular_points"}
     assert r["template"]["format"]=="starfish-minutiae"
+    assert r["template"]["version"]==2
     assert 0.0<=r["quality"]["foreground_ratio"]<=1.0
+    assert 0.0<=r["quality"]["frequency_coverage"]<=1.0
+    assert "ridge_frequency_median" in r["quality"]
+    assert "orientation_concentration" in r["quality"]
+    assert isinstance(r["singular_points"],list)
 
 def test_uniform_image_is_safe():
     img=np.full((128,128),128,np.uint8)
