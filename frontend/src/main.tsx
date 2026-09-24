@@ -1,46 +1,5 @@
-import {useState} from "react";
-import {createRoot} from "react-dom/client";
-import "./styles.css";
-
-const API = import.meta.env.VITE_API_URL || "http://localhost:8000";
-
-function App(){
-  const [file,setFile]=useState<File|null>(null);
-  const [result,setResult]=useState<any>(null);
-  const [busy,setBusy]=useState(false);
-  const [error,setError]=useState("");
-
-  async function analyze(){
-    if(!file) return;
-    setBusy(true); setError(""); setResult(null);
-    const fd=new FormData(); fd.append("file",file);
-    try{
-      const res=await fetch(API+"/api/v1/extract",{method:"POST",body:fd});
-      if(!res.ok) throw new Error(await res.text());
-      setResult(await res.json());
-    }catch(e){setError(e instanceof Error?e.message:"Analysis failed")}
-    finally{setBusy(false)}
-  }
-
-  return <main>
-    <header><strong>STARFISH</strong><span>Fingerprint Analysis Engine</span></header>
-    <section className="hero">
-      <h1>Fingerprint → minutiae.</h1>
-      <p>Upload a real fingerprint image and inspect enhancement, skeletonization and detected ridge endings / bifurcations.</p>
-      <label className="drop"><input type="file" accept="image/*" onChange={e=>setFile(e.target.files?.[0]||null)}/>{file?file.name:"Choose fingerprint image"}</label>
-      <button disabled={!file||busy} onClick={analyze}>{busy?"Processing…":"Analyze fingerprint"}</button>
-      {error&&<pre className="error">{error}</pre>}
-    </section>
-    {result&&<section>
-      <div className="stats">
-        <div><b>{result.counts.total}</b><span>Total</span></div>
-        <div><b>{result.counts.endings}</b><span>Endings</span></div>
-        <div><b>{result.counts.bifurcations}</b><span>Bifurcations</span></div>
-        <div><b>{(result.quality.foreground_ratio*100).toFixed(1)}%</b><span>Foreground</span></div>
-      </div>
-      <div className="grid">{["enhanced","skeleton","overlay"].map((k)=><figure key={k}><img src={API+result.artifacts[k]}/><figcaption>{k}</figcaption></figure>)}</div>
-      <details><summary>Minutiae JSON</summary><pre>{JSON.stringify(result.minutiae,null,2)}</pre></details>
-    </section>}
-  </main>
-}
-createRoot(document.getElementById("root")!).render(<App/>);
+import {useState} from "react"; import {createRoot} from "react-dom/client"; import "./styles.css";
+const API=import.meta.env.VITE_API_URL||"http://localhost:8000";
+function App(){const[file,setFile]=useState<File|null>(null),[r,setR]=useState<any>(),[busy,setBusy]=useState(false),[err,setErr]=useState("");
+async function run(){if(!file)return;setBusy(true);setErr("");try{const f=new FormData();f.append("file",file);const x=await fetch(API+"/api/v1/extract",{method:"POST",body:f});if(!x.ok)throw Error(await x.text());setR(await x.json())}catch(e){setErr(e instanceof Error?e.message:"Analysis failed")}finally{setBusy(false)}}
+return <main><header><b>STARFISH</b><span>Fingerprint Analysis Engine</span></header><section className="hero"><small>ADVANCED IMAGE ANALYSIS</small><h1>Fingerprint → minutiae.</h1><p>Segmentation, orientation/frequency estimation, adaptive Gabor enhancement, skeletonization, validated minutiae and quality metrics.</p><label className="drop"><input type="file" accept="image/*" onChange={e=>setFile(e.target.files?.[0]||null)}/>{file?file.name:"Upload a fingerprint image"}</label><button disabled={!file||busy} onClick={run}>{busy?"Processing…":"Analyze"}</button>{err&&<pre className="error">{err}</pre>}</section>{r&&<section><div className="stats">{[[r.counts.total,"Minutiae"],[r.counts.endings,"Endings"],[r.counts.bifurcations,"Bifurcations"],[(r.quality.foreground_ratio*100).toFixed(1)+"%","Foreground"],[r.quality.status,"Quality"]].map(([a,b])=><div><strong>{a}</strong><span>{b}</span></div>)}</div><div className="grid">{["enhanced","mask","skeleton","overlay"].map(k=><figure><img src={API+r.artifacts[k]}/><figcaption>{k}</figcaption></figure>)}</div><a href={API+r.artifacts.template} target="_blank">View serialized template →</a><details><summary>Minutiae JSON</summary><pre>{JSON.stringify(r.minutiae,null,2)}</pre></details></section>}</main>} createRoot(document.getElementById("root")!).render(<App/>);
