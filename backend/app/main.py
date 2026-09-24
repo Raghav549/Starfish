@@ -53,6 +53,7 @@ async def extract(file:UploadFile=File(...)):
     try:
         result=pipeline.process(image)
         artifacts={
+            "reconstruction":image_data_url(result["reconstruction"],"enhanced"),
             "enhanced":image_data_url(result["enhanced"],"enhanced"),
             "mask":image_data_url(result["mask"],"mask"),
             "skeleton":image_data_url(result["skeleton"],"skeleton"),
