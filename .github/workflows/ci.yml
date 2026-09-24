@@ -10,6 +10,17 @@ jobs:
         with: {python-version: "3.11"}
       - run: pip install -r requirements.txt
       - run: PYTHONPATH=. pytest
+      - run: PYTHONPATH=. python -m compileall -q app tests
+  benchmark:
+    runs-on: ubuntu-latest
+    needs: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+      - run: pip install -r backend/requirements.txt
+      - run: PYTHONPATH=backend:benchmarks pytest benchmarks/tests
+      - run: PYTHONPATH=backend:benchmarks python -m compileall -q benchmarks
   native:
     runs-on: ubuntu-latest
     defaults: {run: {working-directory: native}}
