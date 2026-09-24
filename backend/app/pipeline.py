@@ -98,16 +98,29 @@ class FingerprintPipeline:
         return (np.clip(out,0,1)*255).astype(np.uint8)
 
     def _enhance(self,img,mask,ori,freq):
-        valid=freq[(freq>0)&(mask>0)]; rf=float(np.median(valid)) if valid.size else .1
-        wavelength=float(np.clip(1/max(rf,1e-3),6,24)); src=img.astype(np.float32)/255.; out=np.zeros_like(src)
-        for a in np.linspace(0,math.pi,18,endpoint=False):
+        valid=freq[(freq>0)&(mask>0)]
+        rf=float(np.median(valid)) if valid.size else 1.0/self.target_ridge_wavelength
+        wavelength=float(np.clip(1/max(rf,1e-3),6,18))
+        src=img.astype(np.float32)/255.0
+        bank=np.linspace(0,math.pi,24,endpoint=False)
+        energy=np.zeros_like(src)
+        for a in bank:
             kernel=cv2.getGaborKernel((31,31),self.gabor_sigma,float(a),wavelength,.5,0,cv2.CV_32F)
             response=cv2.filter2D(src,cv2.CV_32F,kernel)
-            delta=np.abs(np.angle(np.exp(1j*(ori-a)))); weight=np.exp(-(delta**2)/(2*(math.pi/20)**2))
-            out+=np.maximum(response,0)*weight
-        out=cv2.normalize(out,None,0,255,cv2.NORM_MINMAX).astype(np.uint8); out[mask==0]=0
-        out=cv2.createCLAHE(clipLimit=1.8,tileGridSize=(8,8)).apply(out)
-        out=cv2.addWeighted(out,1.25,cv2.GaussianBlur(out,(0,0),.7),-.25,0); out[mask==0]=0
+            delta=np.abs(np.angle(np.exp(1j*(ori-a))))
+            weight=np.exp(-(delta**2)/(2*(math.pi/28)**2))
+            energy+=np.abs(response)*weight
+        energy=cv2.normalize(energy,None,0,1,cv2.NORM_MINMAX)
+        mean=cv2.GaussianBlur(src,(0,0),5)
+        sq=cv2.GaussianBlur(src*src,(0,0),5)
+        local_std=np.sqrt(np.maximum(sq-mean*mean,1e-5))
+        normalized=np.clip((src-mean)/(local_std+1e-3)*.16+.5,0,1)
+        out=np.clip(.62*energy+.38*normalized,0,1)
+        out[mask==0]=0
+        out=(out*255).astype(np.uint8)
+        out=cv2.createCLAHE(clipLimit=1.5,tileGridSize=(8,8)).apply(out)
+        out=cv2.GaussianBlur(out,(0,0),.5)
+        out[mask==0]=0
         return out
 
     def _binarize(self,enhanced,mask):
