@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.16)
+project(starfish_native LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+add_library(starfish_native STATIC src/starfish.cpp)
+target_include_directories(starfish_native PUBLIC include)
