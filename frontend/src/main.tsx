@@ -1,7 +1,7 @@
 import {useState} from "react";
 import {createRoot} from "react-dom/client";
 import "./styles.css";
-const API=import.meta.env.VITE_API_URL||"http://localhost:8000";
+const API=import.meta.env.VITE_API_URL||"";
 function App(){
  const[file,setFile]=useState<File|null>(null),[r,setR]=useState<any>(),[busy,setBusy]=useState(false),[err,setErr]=useState("");
  async function run(){if(!file)return;setBusy(true);setErr("");try{const f=new FormData();f.append("file",file);const x=await fetch(API+"/api/v1/extract",{method:"POST",body:f});if(!x.ok)throw Error(await x.text());setR(await x.json())}catch(e){setErr(e instanceof Error?e.message:"Analysis failed")}finally{setBusy(false)}}
