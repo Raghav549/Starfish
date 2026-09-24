@@ -190,7 +190,7 @@ class FingerprintPipeline:
             "ridge_frequency_p10":float(np.percentile(freq[(freq>0)&(mask>0)],10)) if np.any((freq>0)&(mask>0)) else 0.0,
             "ridge_frequency_p90":float(np.percentile(freq[(freq>0)&(mask>0)],90)) if np.any((freq>0)&(mask>0)) else 0.0,
             "minutiae_density":float(len(pts)/max(int(np.sum(mask>0)),1)*10000),"singular_points":len(singular),**self._orientation_stats(ori,coh,mask)})
-        q["status"]="usable" if q["foreground_ratio"]>.12 and q["coherence_p50"]>.15 and len(pts)>=4 else "review"
+        q["status"]="usable" if q["foreground_ratio"]>.08 and q["coherence_p50"]>.18 and len(pts)>=4 else "review"
         return {"enhanced":enh,"mask":mask,"skeleton":sk,"overlay":self._overlay(enh,sk,pts,singular),"minutiae":pts,"singular_points":singular,"orientation_field":ori,"ridge_frequency":freq,
                 "counts":{"total":len(pts),"endings":sum(m["type"]=="ending" for m in pts),"bifurcations":sum(m["type"]=="bifurcation" for m in pts),"singular_points":len(singular)},
                 "quality":q,"template":{"format":"starfish-minutiae","version":2,"image":{"width":int(n.shape[1]),"height":int(n.shape[0])},"quality":q,"minutiae":pts,"singular_points":singular,
