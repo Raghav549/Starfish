@@ -207,14 +207,14 @@ class FingerprintPipeline:
 
     def process(self,image):
         n=self._normalize(image); q=self._quality(n); mask=self._segment(n); ori,freq,coh=self._orientation_frequency(n,mask)
-        enh=self._enhance(n,mask,ori,freq); sk=self._skeleton(enh,mask); pts=self._extract(sk,ori,mask,coh,enh); singular=self._singular_points(ori,mask)
+        reconstruction=self._ridge_reconstruction(n,mask,ori,freq); enh=self._enhance(reconstruction,mask,ori,freq); sk=self._skeleton(enh,mask); pts=self._extract(sk,ori,mask,coh,enh); singular=self._singular_points(ori,mask)
         q.update({"foreground_ratio":float(np.mean(mask>0)),"frequency_coverage":float(np.mean((freq>0)&(mask>0))),
             "ridge_frequency_median":float(np.median(freq[(freq>0)&(mask>0)])) if np.any((freq>0)&(mask>0)) else 0.0,
             "ridge_frequency_p10":float(np.percentile(freq[(freq>0)&(mask>0)],10)) if np.any((freq>0)&(mask>0)) else 0.0,
             "ridge_frequency_p90":float(np.percentile(freq[(freq>0)&(mask>0)],90)) if np.any((freq>0)&(mask>0)) else 0.0,
             "minutiae_density":float(len(pts)/max(int(np.sum(mask>0)),1)*10000),"singular_points":len(singular),**self._orientation_stats(ori,coh,mask)})
         q["status"]="usable" if q["foreground_ratio"]>.08 and q["coherence_p50"]>.18 and len(pts)>=4 else "review"
-        return {"enhanced":enh,"mask":mask,"skeleton":sk,"overlay":self._overlay(enh,sk,pts,singular),"minutiae":pts,"singular_points":singular,"orientation_field":ori,"ridge_frequency":freq,
+        return {"reconstruction":reconstruction,"enhanced":enh,"mask":mask,"skeleton":sk,"overlay":self._overlay(enh,sk,pts,singular),"minutiae":pts,"singular_points":singular,"orientation_field":ori,"ridge_frequency":freq,
                 "counts":{"total":len(pts),"endings":sum(m["type"]=="ending" for m in pts),"bifurcations":sum(m["type"]=="bifurcation" for m in pts),"singular_points":len(singular)},
                 "quality":q,"template":{"format":"starfish-minutiae","version":2,"image":{"width":int(n.shape[1]),"height":int(n.shape[0])},"quality":q,"minutiae":pts,"singular_points":singular,
                 "ridge_frequency_summary":{"median":q["ridge_frequency_median"],"p10":q["ridge_frequency_p10"],"p90":q["ridge_frequency_p90"]}}}
