@@ -16,6 +16,8 @@ class FingerprintPipeline:
     max_trace:int=28
     ridge_step_px:float=1.0
     target_ridge_wavelength:float=10.0
+    adaptive_gain:float=1.6
+    ridge_sigma:float=1.3
     reconstruction_sigma:float=3.0
     reconstruction_blend:float=0.82
 
@@ -87,9 +89,12 @@ class FingerprintPipeline:
         # Preserve continuous ridge texture while suppressing background.
         base=cv2.normalize(src,None,0,1,cv2.NORM_MINMAX)
         out=(self.reconstruction_blend*response+(1.0-self.reconstruction_blend)*base)
+        out=cv2.GaussianBlur(out,(0,0),self.ridge_sigma)
+        # Locally expand ridge/valley contrast while retaining the continuous image texture.
+        local=cv2.GaussianBlur(out,(0,0),3)
+        detail=out-local
+        out=np.clip(local+self.adaptive_gain*detail,0,1)
         out[mask==0]=0
-        out=cv2.GaussianBlur(out,(0,0),self.reconstruction_sigma)
-        out=cv2.addWeighted(out,1.55,cv2.GaussianBlur(out,(0,0),1.2),-0.55,0)
         out[mask==0]=0
         return (np.clip(out,0,1)*255).astype(np.uint8)
 
