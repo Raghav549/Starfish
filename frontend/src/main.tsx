@@ -3,7 +3,7 @@ import {createRoot} from "react-dom/client";
 import {mountScanScene,type ScanScene} from "./three";
 import "./styles.css";
 
-type Result={job_id:string;width:number;height:number;quality:{foreground_ratio:number;status:string;ridge_energy:number;coherence:number;frequency_coverage:number;minutiae_density:number};counts:{total:number;endings:number;bifurcations:number};minutiae:Array<{x:number;y:number;type:string;angle:number;quality:number}>;artifacts:Record<string,string>};
+type Result={job_id:string;width:number;height:number;quality:{foreground_ratio:number;status:string;ridge_energy:number;coherence:number;frequency_coverage:number;minutiae_density:number};counts:{total:number;endings:number;bifurcations:number};minutiae:Array<{x:number;y:number;type:string;angle:number;quality:number}>;artifacts:Record<string,string>;template:Record<string,unknown>};
 const API=(import.meta.env.VITE_API_URL||"").replace(/\/$/,"");
 const steps=["Upload","Decode","Normalize","Segment","Ridge flow","Enhance","Skeletonize","Minutiae","Template","Artifacts"];
 
