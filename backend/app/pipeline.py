@@ -84,9 +84,12 @@ class FingerprintPipeline:
             w=np.exp(-(delta*delta)/(2*(math.pi/34)**2))
             response+=r*w
         response=cv2.normalize(response,None,0,1,cv2.NORM_MINMAX)
-        # Combine response with normalized local image to avoid erasing legitimate ridge detail.
+        # Preserve continuous ridge texture while suppressing background.
         base=cv2.normalize(src,None,0,1,cv2.NORM_MINMAX)
-        out=(0.72*response+0.28*base)
+        out=(self.reconstruction_blend*response+(1.0-self.reconstruction_blend)*base)
+        out[mask==0]=0
+        out=cv2.GaussianBlur(out,(0,0),self.reconstruction_sigma)
+        out=cv2.addWeighted(out,1.55,cv2.GaussianBlur(out,(0,0),1.2),-0.55,0)
         out[mask==0]=0
         return (np.clip(out,0,1)*255).astype(np.uint8)
 
