@@ -95,7 +95,6 @@ class FingerprintPipeline:
         detail=out-local
         out=np.clip(local+self.adaptive_gain*detail,0,1)
         out[mask==0]=0
-        out[mask==0]=0
         return (np.clip(out,0,1)*255).astype(np.uint8)
 
     def _enhance(self,img,mask,ori,freq):
